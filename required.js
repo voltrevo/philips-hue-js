@@ -1,1 +1,1 @@
-module.exports = (str) => { throw new Exception(`Argument required ${param}`); };
+module.exports = (str) => { throw new Error(`Argument required ${param}`); };
