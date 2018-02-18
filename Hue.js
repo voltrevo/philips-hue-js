@@ -12,18 +12,100 @@ module.exports = ({
 
   const apiPrefix = `http://${addr}/api/${key}`;
 
-  hue.get = (addr) => (
+  let waiting = false;
+
+  const pending = {
+    get: {},
+    put: {},
+  };
+
+  let dispatchScheduled = false;
+
+  const dispatch = () => {
+    if (waiting) {
+      return;
+    }
+
+    const getKeys = Object.keys(pending.get);
+
+    if (getKeys.length > 0) {
+      const addr = getKeys[0];
+      const addrInfo = pending.get[addr];
+      delete pending.get[addr];
+
+      const promise = get(addr);
+      waiting = true;
+      addrInfo.resolves.forEach(resolve => resolve(promise));
+
+      promise.then(
+        () => { waiting = false; dispatch(); },
+        () => { waiting = false; dispatch(); }
+      );
+
+      return;
+    }
+
+    const putKeys = Object.keys(pending.put);
+
+    if (putKeys.length > 0) {
+      const addr = putKeys[0];
+      const addrInfo = pending.put[addr];
+      delete pending.put[addr];
+
+      const promise = put(addr, addrInfo.attr);
+      waiting = true;
+      addrInfo.resolves.forEach(resolve => resolve(promise));
+
+      promise.then(
+        () => { waiting = false; dispatch(); },
+        () => { waiting = false; dispatch(); }
+      );
+
+      return;
+    }
+
+    dispatchScheduled = false;
+  };
+
+  const scheduleDispatch = () => {
+    if (dispatchScheduled) {
+      return;
+    }
+
+    Promise.resolve().then(dispatch);
+    dispatchScheduled = true;
+  };
+
+  const get = (addr) => (
     fetch(apiPrefix + addr)
     .then(res => res.json())
   );
 
-  hue.put = (addr, attr) => (
+  hue.get = (addr) => new Promise(resolve => {
+    const addrInfo = pending.get[addr] || {resolves: []};
+    pending.get[addr] = addrInfo;
+
+    addrInfo.resolves.push(resolve);
+    scheduleDispatch();
+  });
+
+  const put = (addr, attr) => (
     fetch(apiPrefix + addr, {
       method: 'PUT',
       body: JSON.stringify(attr),
     })
     .then(res => res.json())
   );
+
+  hue.put = (addr, attr) => new Promise(resolve => {
+    const addrInfo = pending.put[addr] || {attr: {}, resolves: []};
+    pending.put[addr] = addrInfo;
+
+    Object.keys(attr).forEach(attrKey => addrInfo.attr[attrKey] = attr[attrKey]);
+    addrInfo.resolves.push(resolve);
+
+    scheduleDispatch();
+  });
 
   hue.Lights = () => (
     hue.get('/lights')
