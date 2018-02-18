@@ -33,37 +33,18 @@ module.exports = ({
   hue.Light = (i) => {
     const light = {};
 
-    light.on = Property({
-      get: () => hue.get(`/lights/${i}`).then(res => res.state.on),
-      set: (on) => hue.put(`/lights/${i}/state`, {
-        on: on,
+    const LightProperty = (key, transform = value => value) => Property({
+      get: () => hue.get(`/lights/${i}`).then(res => res.state[key]),
+      set: (value) => hue.put(`/lights/${i}/state`, {
+        [key]: transform(value),
         transitiontime: 0,
-      }),
+      })
     });
 
-    light.hue = Property({
-      get: () => hue.get(`/lights/${i}`).then(res => res.state.hue),
-      set: (hueVal) => hue.put(`/lights/${i}/state`, {
-        hue: Math.floor((65536 * hueVal) % 65536),
-        transitiontime: 0,
-      }),
-    });
-
-    light.brightness = Property({
-      get: () => hue.get(`/lights/${i}`).then(res => res.state.bri),
-      set: (brightness) => hue.put(`/lights/${i}/state`, {
-        bri: Math.min(Math.floor(256 * brightness), 255),
-        transitiontime: 0,
-      }),
-    });
-
-    light.saturation = Property({
-      get: () => hue.get(`/lights/${i}`).then(res => res.state.sat),
-      set: (saturation) => hue.put(`/lights/${i}/state`, {
-        sat: Math.min(Math.floor(256 * saturation), 255),
-        transitiontime: 0,
-      }),
-    });
+    light.on = LightProperty('on');
+    light.hue = LightProperty('hue', value => Math.floor((65536 * value) % 65536));
+    light.brightness = LightProperty('bri', value => Math.min(Math.floor(256 * value), 255));
+    light.saturation = LightProperty('sat', value => Math.min(Math.floor(256 * value), 255));
 
     return light;
   };
