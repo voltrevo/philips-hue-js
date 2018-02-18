@@ -6,7 +6,6 @@ const required = require('./required.js');
 module.exports = ({
   addr = required('addr'),
   key = required('apikey'),
-  msgRate = 10, // Max msgs per sec
 }) => {
   const hue = {};
 
@@ -21,7 +20,7 @@ module.exports = ({
 
   let dispatchScheduled = false;
 
-  const dispatch = () => {
+  const dispatch = ({queued = false} = {}) => {
     if (waiting) {
       return;
     }
@@ -38,8 +37,8 @@ module.exports = ({
       addrInfo.resolves.forEach(resolve => resolve(promise));
 
       promise.then(
-        () => { waiting = false; dispatch(); },
-        () => { waiting = false; dispatch(); }
+        () => { waiting = false; dispatch({queued: true}); },
+        () => { waiting = false; dispatch({queued: true}); }
       );
 
       return;
@@ -52,13 +51,17 @@ module.exports = ({
       const addrInfo = pending.put[addr];
       delete pending.put[addr];
 
+      if (addrInfo.attr.transitiontime === 0 && queued) {
+        addrInfo.attr.transitiontime = 2;
+      }
+
       const promise = put(addr, addrInfo.attr);
       waiting = true;
       addrInfo.resolves.forEach(resolve => resolve(promise));
 
       promise.then(
-        () => { waiting = false; dispatch(); },
-        () => { waiting = false; dispatch(); }
+        () => { waiting = false; dispatch({queued: true}); },
+        () => { waiting = false; dispatch({queued: true}); }
       );
 
       return;
