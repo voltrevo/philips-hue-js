@@ -1,0 +1,27 @@
+{
+  "name": "philips-hue-js",
+  "version": "1.0.0",
+  "description": "JS wrapper for philips hue bridge local HTTP api",
+  "main": "Hue.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voltrevo/philips-hue-js.git"
+  },
+  "keywords": [
+    "philips",
+    "hue",
+    "js",
+    "lights",
+    "automation",
+    "api"
+  ],
+  "author": "Andrew Morris",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/voltrevo/philips-hue-js/issues"
+  },
+  "homepage": "https://github.com/voltrevo/philips-hue-js#readme"
+}
